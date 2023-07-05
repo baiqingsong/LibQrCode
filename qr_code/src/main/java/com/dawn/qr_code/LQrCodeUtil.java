@@ -65,7 +65,7 @@ public class LQrCodeUtil {
      * @param photoPath 图片地址
      * @return 二维码
      */
-    public String analysisQrCode(String photoPath){
+    public static String analysisQrCode(String photoPath){
         Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
         if(bitmap == null)
             return null;
