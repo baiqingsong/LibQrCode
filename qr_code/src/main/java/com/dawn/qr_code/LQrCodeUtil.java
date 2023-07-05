@@ -67,6 +67,10 @@ public class LQrCodeUtil {
      */
     public static String analysisQrCode(String photoPath){
         Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
+        return analysisQrCode(bitmap);
+    }
+
+    public static String analysisQrCode(Bitmap bitmap){
         if(bitmap == null)
             return null;
         String qrCode = QRCodeDecoder.syncDecodeQRCode(bitmap);
