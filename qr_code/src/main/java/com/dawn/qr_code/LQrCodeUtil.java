@@ -12,17 +12,26 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.Binarizer;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.DecodeHintType;
 import com.google.zxing.EncodeHintType;
+import com.google.zxing.LuminanceSource;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.Result;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
+import java.io.IOException;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Hashtable;
-
-import cn.bingoogolapple.qrcode.core.BGAQRCodeUtil;
-import cn.bingoogolapple.qrcode.zxing.QRCodeDecoder;
-import cn.bingoogolapple.qrcode.zxing.QRCodeEncoder;
+import java.util.Map;
 
 @SuppressWarnings("unused")
 public class LQrCodeUtil {
@@ -47,9 +56,11 @@ public class LQrCodeUtil {
             @Override
             protected Bitmap doInBackground(Void... params) {
 //                Bitmap logoBitmap = BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher);
-                QRCodeEncoder.HINTS.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
-                return QRCodeEncoder.syncEncodeQRCode(qrCodeStr, BGAQRCodeUtil.dp2px(context, size), Color.parseColor("#000000")/*, logoBitmap*/);
+//                QRCodeEncoder.HINTS.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);
+//                return QRCodeEncoder.syncEncodeQRCode(qrCodeStr, BGAQRCodeUtil.dp2px(context, size), Color.parseColor("#000000")/*, logoBitmap*/);
+                return generateQRCode(qrCodeStr, size, size);
             }
+
 
             @Override
             protected void onPostExecute(Bitmap bitmap) {
@@ -59,7 +70,36 @@ public class LQrCodeUtil {
             }
         }.execute();
     }
-
+    public static Bitmap generateQRCode(String data, int width, int height) {
+        try {
+            // 创建QRCodeWriter实例
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            // 设置编码参数
+            Map<EncodeHintType, Object> hints = new HashMap<>();
+            hints.put(EncodeHintType.CHARACTER_SET, "UTF-8"); // 字符编码
+            hints.put(EncodeHintType.MARGIN, 1); // 边距，最小为0
+            // 生成BitMatrix（二维码的矩阵表示）
+            BitMatrix bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height, hints);
+            // 初始化Bitmap
+            int[] pixels = new int[width * height];
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    if (bitMatrix.get(x, y)) {
+                        pixels[y * width + x] = Color.BLACK;
+                    } else {
+                        pixels[y * width + x] = Color.WHITE;
+                    }
+                }
+            }
+            // 根据像素数组生成Bitmap
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+            return bitmap;
+        } catch (WriterException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
     /**
      * 解析图片二维码
      * @param photoPath 图片地址
@@ -70,12 +110,43 @@ public class LQrCodeUtil {
         return analysisQrCode(bitmap);
     }
 
-    public static String analysisQrCode(Bitmap bitmap){
-        if(bitmap == null)
-            return null;
-        String qrCode = QRCodeDecoder.syncDecodeQRCode(bitmap);
-        bitmap.recycle();
-        return qrCode;
+//    public static String analysisQrCode(Bitmap bitmap){
+//        if(bitmap == null)
+//            return null;
+//        String qrCode = QRCodeDecoder.syncDecodeQRCode(bitmap);
+//        bitmap.recycle();
+//        return null;
+//    }
+    public static String analysisQrCode(Bitmap bitmap) {
+        String result = null;
+        try {
+            // 将Bitmap转换为RGB数组
+            int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
+            bitmap.getPixels(intArray, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+            // 创建RGB LuminanceSource
+            LuminanceSource source = new RGBLuminanceSource(bitmap.getWidth(), bitmap.getHeight(), intArray);
+
+            // 使用HybridBinarizer创建BinaryBitmap
+            Binarizer binarizer = new HybridBinarizer(source);
+            BinaryBitmap binaryBitmap = new BinaryBitmap(binarizer);
+
+            // 设置解码的HintType
+            Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
+            hints.put(DecodeHintType.CHARACTER_SET, "UTF-8"); // 指定字符编码为UTF-8
+
+            // 使用MultiFormatReader解码
+            Result decodeResult = new MultiFormatReader().decode(binaryBitmap, hints);
+
+            // 解码结果
+            result = decodeResult.getText();
+
+        } catch (NotFoundException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     /**
