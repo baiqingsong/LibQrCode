@@ -21,16 +21,21 @@ import com.google.zxing.MultiFormatReader;
 import com.google.zxing.NotFoundException;
 import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.Result;
+import com.google.zxing.ResultPoint;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.journeyapps.barcodescanner.BarcodeCallback;
+import com.journeyapps.barcodescanner.BarcodeResult;
+import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("unused")
@@ -227,5 +232,29 @@ public class LQrCodeUtil {
         }
 
         return null;
+    }
+
+    /**
+     * 获取二维码扫描结果
+     * @param decoratedBarcodeView 扫描控件
+     * @param listener 扫描结果监听
+     */
+    public void addBarcodeCodeListener(DecoratedBarcodeView decoratedBarcodeView, AutoBarcodeListener listener){
+        if(decoratedBarcodeView == null)
+            return;
+        decoratedBarcodeView.decodeSingle(new BarcodeCallback() {
+            @Override
+            public void barcodeResult(BarcodeResult result) {
+                // 处理扫描结果
+                String scanResult = result.getText();
+                if(listener != null)
+                    listener.getBarcode(scanResult);
+            }
+
+            @Override
+            public void possibleResultPoints(List<ResultPoint> resultPoints) {
+
+            }
+        });
     }
 }
